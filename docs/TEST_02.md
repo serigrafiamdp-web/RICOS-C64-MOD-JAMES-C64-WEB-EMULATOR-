@@ -1,6 +1,6 @@
 # RicOS C64 — TEST 02: reconstrucción de interfaz /c64/
 
-**Estado: PENDIENTE DE PASS EN NAVEGADOR.**
+**Estado: FAIL COMO CLON 1:1.** Los cinco menús reconstruidos y los paneles permanentes no reproducen la interfaz original, que tiene ocho menús completos y paneles inicialmente colapsados. Ver [Auditoría de fuente](AUDITORIA_ORIGINAL_C64_1A1.md).
 
 ## Objetivo
 
