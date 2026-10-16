@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RicOS C64 — TEST 01</title>
+<style>
+:root{color-scheme:dark;font:14px system-ui;background:#10141d;color:#f1f5ff}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column}
+header,.toolbar,footer{padding:12px 16px;background:#202737;border-bottom:1px solid #425069}
+h1{margin:0;font-size:21px}.muted,footer{color:#aebdd7;font-size:12px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#171d2a}
+button,label.file{cursor:pointer;color:inherit;background:#35455f;border:1px solid #6a809d;border-radius:5px;padding:9px 12px;font:inherit}
+button:disabled{opacity:.4}label.file input{display:none}
+main{flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;padding:18px 10px}
+.screen{position:relative;width:min(96vw,960px);height:min(65vw,610px);min-height:270px;background:#222;outline:1px solid #4e5d77;overflow:hidden}
+#c64-holder{position:absolute;inset:0;background:#222}
+#c64-canvas{position:absolute;top:0;left:0;image-rendering:pixelated}
+#c64-overlay-onscreen-joystick,#c64-onscreen-tabs,#c64-onscreen-joystick,#c64-onscreen-keyboard{display:none;position:absolute;bottom:0;left:0;right:0}
+.tab{display:inline-block;padding:8px 12px;background:#343942}
+#status[data-state=error]{color:#ffafa9}#status[data-state=ready]{color:#96ebbe}
+footer{text-align:center;border-top:1px solid #425069;border-bottom:0}
+@media(max-width:700px){.screen{height:calc(100dvh - 250px)}h1{font-size:17px}}
+</style>
+</head>
+<body>
+<header><h1>RicOS C64 · TEST 01</h1><span class="muted">Standalone web emulator · Sin editor PETSCII</span></header>
+<div class="toolbar">
+<button type="button" id="start" disabled>▶ Start</button>
+<button type="button" id="reset" disabled>↺ Reset</button>
+<button type="button" id="pause" disabled>⏸ Pause</button>
+<button type="button" id="fullscreen" disabled>⛶ Fullscreen</button>
+<label class="file">Cargar PRG / D64 / CRT<input id="file" type="file" accept=".prg,.d64,.crt" disabled></label>
+<span id="status" role="status" aria-live="polite">Inicializando C64…</span>
+</div>
+<main><div class="screen">
+<div id="c64-holder">
+<canvas id="c64-canvas"></canvas>
+<div id="c64-overlay-onscreen-joystick" style="opacity:.4;bottom:40px"><canvas id="c64-overlay-onscreen-joystick-canvas"></canvas></div>
+<div id="c64-onscreen-tabs"><span class="tab" id="c64-onscreen-keyboard-tab">Keyboard</span><span class="tab" id="c64-onscreen-joystick-tab">Joystick</span></div>
+<div id="c64-onscreen-joystick"><canvas id="c64-onscreen-joystick-canvas"></canvas></div>
+<div id="c64-onscreen-keyboard"><canvas id="c64OnscreenKeyboardCanvas"></canvas></div>
+</div></div>
+<p class="muted">Hacé clic en la pantalla o en Start para iniciar y habilitar audio. PRG y D64: autorun básico.</p>
+</main>
+<footer>Prototipo privado RicOS · Basado en componentes de James / jaammees (LVLLVL). Permisos de redistribución pendientes.</footer>
+<script src="js/content.js"></script><script src="js/c64.min.js"></script><script src="app.js"></script>
+</body></html>
