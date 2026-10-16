@@ -1,0 +1,28 @@
+name: RicOS C64 static verification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check independent C64 entrypoint and runtime
+        shell: bash
+        run: |
+          set -eu
+          test -s index.html
+          test -s rico-clone-v2.css
+          test -s rico-clone-v2.js
+          test -s js/content.js
+          test -s js/c64.min.js
+          test -s js/c64.wasm
+          node --check rico-clone-v2.js
+          node --check js/content.js
+          grep -q 'rico-clone-v2.js' index.html
+          grep -q 'rico-clone-v2.css' index.html
+          if grep -Eq '<script[^>]+src="(js/main\.js|js/libs\.js|js/editor\.js)"' index.html; then
+            echo "Editor PETSCII script found in entrypoint"; exit 1
+          fi
+          echo "STATIC CHECK PASS — browser runtime test still required"
