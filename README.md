@@ -4,7 +4,7 @@
 
 ## TEST 02 — interfaz tipo debugger
 
-**Estado:** código publicado; verificación estática automatizada PASS; **validación funcional en navegador pendiente de PASS**.
+**Estado:** **FAIL COMO CLON 1:1**, confirmado al comparar el diseño y menús con la captura y la fuente de James. La verificación estática automatizada pasó, pero no valida fidelidad de interfaz.
 
 **Página:** https://serigrafiamdp-web.github.io/RICOS-C64-MOD-JAMES-C64-WEB-EMULATOR-/
 
@@ -16,7 +16,7 @@
 
 **Importante:** TEST 02 es una reconstrucción parcial de la interfaz original, **no una copia idéntica ni un debugger completo**. Varias pestañas son vistas de datos iniciales, no los visores gráficos elaborados de James. Se irá validando cada función individualmente.
 
-## Código / documentación
+**Referencia obligatoria:** [Auditoría original 1:1](docs/AUDITORIA_ORIGINAL_C64_1A1.md). No seguir añadiendo menús inventados; partir de la compilación original de James y validar antes de recortar PETSCII.\n\n## Código / documentación
 
 - `index.html`, `rico-clone-v2.js`, `rico-clone-v2.css`: shell nueva.
 - `js/c64.min.js`, `js/c64.wasm`: motor original.
