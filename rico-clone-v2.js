@@ -198,10 +198,12 @@ function initialise(){
  el('memorygo').onclick=()=>{let x=parseInt(el('memoryaddress').value.replace(/^\$/,''),16);if(Number.isFinite(x)){memoryAddress=x&65535;refreshDebugger()}};
  el('memoryaddress').onkeydown=e=>{if(e.key==='Enter')el('memorygo').click()};
  el('fullscreenbtn').onclick=()=>{try{ensureStart();fullscreen()}catch(e){notice(e.message,true)}};
+ el('joyinfo').onchange=()=>{try{assertReady();const port=parseInt(el('joyinfo').value,10);c64.joystick.setPortEnabled(1,port===1);c64.joystick.setPortEnabled(2,port===2);syncChecks();notice('Joystick port '+port)}catch(e){notice(e.message,true)}};
+ el('memoryaddress').addEventListener('keydown',e=>e.stopImmediatePropagation());
  el('c64-canvas').addEventListener('mousemove',e=>{if(!mouseInfo)return;const r=e.target.getBoundingClientRect();el('mousecoord').textContent=Math.round((e.clientX-r.left)/r.width*384)+', '+Math.round((e.clientY-r.top)/r.height*272)});
  el('c64-canvas').setAttribute('tabindex','0');
  const check=setInterval(()=>{if(typeof c64_ready!=='undefined'&&c64_ready){ready=true;clearInterval(check);
-  document.querySelectorAll('.controls button').forEach(b=>b.disabled=false);
+  document.querySelectorAll('.controls button').forEach(b=>b.disabled=false);el('joyinfo').value='2';c64.joystick.setPortEnabled(2,true);
   notice('C64 ready — click screen to start');syncChecks();refreshDebugger();refreshTimer=setInterval(refreshDebugger,180);
  }},150);
  setTimeout(()=>{if(!ready)notice('C64 initialization failed; check browser console',true)},12000);
