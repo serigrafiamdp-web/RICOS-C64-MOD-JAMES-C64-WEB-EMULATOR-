@@ -10,6 +10,8 @@ on:
       - ".gitmodules"
       - "vendor/lvllvl"
       - "scripts/build-original.sh"
+      - "rico/scanlines.js"
+      - "docs/TEST_CRT01_SCANLINES.md"
       - "docs/TEST_03_ORIGINAL.md"
   workflow_dispatch:
 

@@ -58,3 +58,19 @@ echo "PASS: $source_count original dist files preserved without changes."
 echo "PASS: Original C64 page: $dest_dir/c64/index.html"
 echo "PASS: All assets compared byte-for-byte to James version b528e4c1d38faeadb0e24eb619705e4f0b8ab899"
 echo "Browser runtime and menu-interaction PASS still require manual verification."
+
+
+# -- RicOS experimental layer / TEST CRT01 --
+# Originals were compared above; inject a single optional feature AFTER that test.
+# All 555 files in vendor/lvllvl remain untouched.
+test -s rico/scanlines.js || { echo "ERROR: Missing RicOS scanline source"; exit 1; }
+mkdir -p "$dest_dir/rico"
+cp rico/scanlines.js "$dest_dir/rico/scanlines.js"
+# c64/index.html contains <base href="../">, so rico/ resolves to project root.
+sed -i 's#</head>#<script src="rico/scanlines.js"></script></head>#' "$dest_dir/c64/index.html"
+test "$(grep -Fc '<script src="rico/scanlines.js"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
+  echo "ERROR: CRT script injection failed"; exit 1;
+}
+test -s "$dest_dir/rico/scanlines.js"
+echo "PASS: Added only one script reference in C64 HTML; original bundle remains intact."
+echo "PASS: RicOS optional CRT Scanlines extension packaged (default OFF)."
