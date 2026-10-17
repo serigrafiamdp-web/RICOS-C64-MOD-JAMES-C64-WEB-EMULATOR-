@@ -1,6 +1,6 @@
 # RicOS C64 MOD — James C64 Web Emulator
 
-## TEST 03 — ORIGINAL JAMES 1:1 (nueva base)
+> **MASTER HORA CERO — PASS (17/10/2026):** versión 1:1 de James aprobada por el usuario, congelada en la rama [`MASTER_HORA_CERO`](../../tree/MASTER_HORA_CERO). Referencia exacta y política anti-regresiones en [docs/MASTER_HORA_CERO.md](docs/MASTER_HORA_CERO.md).\n\n## TEST 03 — ORIGINAL JAMES 1:1 (nueva base)
 
 **Estado:** copia íntegra de la distribución original 2023, 555 archivos cotejados byte por byte mediante GitHub Actions. Prueba visual/funcional en navegador pendiente.
 
