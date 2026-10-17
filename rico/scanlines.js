@@ -1,9 +1,9 @@
-/* RicOS CRT03 — fine half-pitch scanlines at CSS display resolution.
+/* RicOS CRT04 — fine half-pitch scanlines at CSS display resolution.
    Original James C64 renderer, framebuffer and UI menu logic remain intact. */
 (function () {
   "use strict";
 
-  var VERSION = "CRT03";
+  var VERSION = "CRT04";
   var installed = false, enabled = false, item = null;
   var overlay = null, canvas = null, holder = null;
   var checkTimer = null, layoutTimer = null, attempts = 0;
@@ -19,16 +19,14 @@
     overlay.style.width = rect.width + "px";
     overlay.style.height = rect.height + "px";
 
-    // One horizontal scanline per emulator row, vs two rows in CRT01.
-    // Draw using the browser's CSS gradient: fractional pixels are retained.
-    var pitch = rect.height / 272;
-    var thickness = Math.min(pitch * 0.46, pitch - 0.1);
+    // Fixed 2 CSS-pixel cadence: exactly 1px dark + 1px clear,
+    // independent of emulator scaling (no per-row rounding artifacts).
     overlay.style.backgroundImage =
       "repeating-linear-gradient(to bottom," +
-      "rgba(0,0,0,0.50) 0px," +
-      "rgba(0,0,0,0.50) " + thickness.toFixed(3) + "px," +
-      "transparent " + thickness.toFixed(3) + "px," +
-      "transparent " + pitch.toFixed(3) + "px)";
+      "rgba(0,0,0,0.42) 0px," +
+      "rgba(0,0,0,0.42) 1px," +
+      "transparent 1px," +
+      "transparent 2px)";
   }
 
   function ensureOverlay() {
@@ -84,13 +82,13 @@
 
     // Temporarily show test number to prove updated JS actually loaded.
     item = nativeC64Menu.addItem({
-      label: "CRT Scanlines (CRT03)",
+      label: "CRT Scanlines (CRT04)",
       id: "ricos-crt03-scanlines",
       checked: false
     });
     item.on("click", toggle);
     installed = true;
-    console.info("[RicOS CRT03] Fine 1-row scanline overlay ready; native video untouched.");
+    console.info("[RicOS CRT04] Fine 1-row scanline overlay ready; native video untouched.");
     return true;
   }
 
@@ -99,7 +97,7 @@
       clearInterval(checkTimer);
     } else if (++attempts >= 150) {
       clearInterval(checkTimer);
-      console.warn("[RicOS CRT03] Menu not ready; leaving original emulator unchanged");
+      console.warn("[RicOS CRT04] Menu not ready; leaving original emulator unchanged");
     }
   }
 
