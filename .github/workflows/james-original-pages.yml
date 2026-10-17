@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - test/original-james-1to1
+      - test/01-crt-scanlines
     paths:
       - ".github/workflows/james-original-pages.yml"
       - ".gitmodules"
