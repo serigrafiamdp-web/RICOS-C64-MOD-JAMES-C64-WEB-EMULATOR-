@@ -62,7 +62,11 @@
     if (!menus || !menus.length) return false;
     var c64Menu = null;
     for (var i = 0; i < menus.length; i++) {
-      if (menus[i].label === "C64") {
+      // James defines TWO C64 menus. The first belongs to a hidden old assembler
+      // menu. Select the actual C64 menu currently rendered on the menu bar.
+      var menuElement = document.getElementById(menus[i].menuBarItemId);
+      if (menus[i].label === "C64" &&
+          menuElement && menuElement.classList.contains("ui-menu-c64")) {
         c64Menu = menus[i];
         break;
       }
