@@ -1,50 +1,78 @@
-/* RicOS CRT04 — fine half-pitch scanlines at CSS display resolution.
-   Original James C64 renderer, framebuffer and UI menu logic remain intact. */
+/* RicOS CRT05 — physically pixel-aligned scanlines, exactly 1 device pixel
+   dark / 1 device pixel clear. No CSS gradient, no variable pixel rounding.
+   The original James C64 renderer, menus and WASM remain unchanged. */
 (function () {
   "use strict";
 
-  var VERSION = "CRT04";
-  var installed = false, enabled = false, item = null;
-  var overlay = null, canvas = null, holder = null;
-  var checkTimer = null, layoutTimer = null, attempts = 0;
+  var enabled = false;
+  var installed = false;
+  var item = null;
+  var picture = null;
+  var holder = null;
+  var overlay = null;
+  var tracking = null;
+  var installPoll = null;
+  var attempts = 0;
+  var lastDpr = 0;
 
-  function alignOverlay() {
-    if (!enabled || !overlay || !canvas || !holder) return;
-    var rect = canvas.getBoundingClientRect();
-    var parentRect = holder.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-
-    overlay.style.left = (rect.left - parentRect.left) + "px";
-    overlay.style.top = (rect.top - parentRect.top) + "px";
-    overlay.style.width = rect.width + "px";
-    overlay.style.height = rect.height + "px";
-
-    // Fixed 2 CSS-pixel cadence: exactly 1px dark + 1px clear,
-    // independent of emulator scaling (no per-row rounding artifacts).
-    overlay.style.backgroundImage =
-      "repeating-linear-gradient(to bottom," +
-      "rgba(0,0,0,0.42) 0px," +
-      "rgba(0,0,0,0.42) 1px," +
-      "transparent 1px," +
-      "transparent 2px)";
+  function paint() {
+    if (!overlay) return;
+    var ctx = overlay.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
+    // Integer DEVICE pixels: no fractional line widths or gradient sampling.
+    for (var y = 0; y < overlay.height; y += 2) {
+      ctx.fillRect(0, y, overlay.width, 1);
+    }
   }
 
-  function ensureOverlay() {
+  function align() {
+    if (!enabled || !overlay || !picture || !holder) return;
+    var bounds = picture.getBoundingClientRect();
+    var holderBounds = holder.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+
+    var dpr = window.devicePixelRatio || 1;
+    var pxLeft = Math.round(bounds.left * dpr);
+    var pxTop = Math.round(bounds.top * dpr);
+    var pxRight = Math.round(bounds.right * dpr);
+    var pxBottom = Math.round(bounds.bottom * dpr);
+    var w = Math.max(1, pxRight - pxLeft);
+    var h = Math.max(1, pxBottom - pxTop);
+
+    // Align the overlay's actual screen origin to an integer physical pixel.
+    overlay.style.left = (pxLeft / dpr - holderBounds.left) + "px";
+    overlay.style.top = (pxTop / dpr - holderBounds.top) + "px";
+    overlay.style.width = (w / dpr) + "px";
+    overlay.style.height = (h / dpr) + "px";
+
+    // Backing bitmap is in real physical pixels, never scaled to source rows.
+    if (overlay.width !== w || overlay.height !== h || lastDpr !== dpr) {
+      lastDpr = dpr;
+      overlay.width = w;
+      overlay.height = h;
+      paint();
+    }
+  }
+
+  function prepare() {
     if (!window.g_app || !g_app.c64Debugger) return false;
-    canvas = g_app.c64Debugger.canvas || document.getElementById("c64DebuggerCanvas");
-    if (!canvas) return false;
-    holder = document.getElementById("c64DebuggerCanvasHolder") || canvas.parentElement;
+    picture = g_app.c64Debugger.canvas ||
+      document.getElementById("c64DebuggerCanvas");
+    if (!picture) return false;
+    holder = document.getElementById("c64DebuggerCanvasHolder") ||
+      picture.parentElement;
     if (!holder) return false;
 
     if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "ricos-crt03-scanlines";
+      overlay = document.createElement("canvas");
+      overlay.id = "ricos-crt05-lines";
       overlay.setAttribute("aria-hidden", "true");
       overlay.style.cssText =
         "position:absolute;pointer-events:none;display:none;" +
-        "background-repeat:repeat;will-change:transform";
-      // Put effect immediately after picture but BELOW James' play / joystick controls.
-      canvas.insertAdjacentElement("afterend", overlay);
+        "padding:0;margin:0;border:0;image-rendering:pixelated";
+      picture.insertAdjacentElement("afterend", overlay);
     }
     return true;
   }
@@ -52,14 +80,16 @@
   function toggle() {
     enabled = !enabled;
     if (item) item.setChecked(enabled);
-    if (enabled && ensureOverlay()) {
+    if (enabled && prepare()) {
       overlay.style.display = "block";
-      alignOverlay();
-      layoutTimer = setInterval(alignOverlay, 300);
+      align();
+      // Keep lines aligned after resize, C64 Size menu or browser zoom.
+      if (tracking) clearInterval(tracking);
+      tracking = setInterval(align, 200);
     } else {
+      if (tracking) clearInterval(tracking);
+      tracking = null;
       if (overlay) overlay.style.display = "none";
-      if (layoutTimer) clearInterval(layoutTimer);
-      layoutTimer = null;
     }
   }
 
@@ -69,38 +99,32 @@
     var menus = g_app.menuBar.menus;
     if (!menus || !menus.length) return false;
 
-    var nativeC64Menu = null;
+    var c64Menu = null;
     for (var i = 0; i < menus.length; i++) {
-      var el = document.getElementById(menus[i].menuBarItemId);
-      if (menus[i].label === "C64" && el &&
-          el.classList.contains("ui-menu-c64")) {
-        nativeC64Menu = menus[i];
+      var element = document.getElementById(menus[i].menuBarItemId);
+      if (menus[i].label === "C64" && element &&
+          element.classList.contains("ui-menu-c64")) {
+        c64Menu = menus[i];
         break;
       }
     }
-    if (!nativeC64Menu) return false;
+    if (!c64Menu) return false;
 
-    // Temporarily show test number to prove updated JS actually loaded.
-    item = nativeC64Menu.addItem({
-      label: "CRT Scanlines (CRT04)",
-      id: "ricos-crt03-scanlines",
+    item = c64Menu.addItem({
+      label: "CRT Scanlines (CRT05)",
+      id: "ricos-crt05-scanlines",
       checked: false
     });
     item.on("click", toggle);
     installed = true;
-    console.info("[RicOS CRT04] Fine 1-row scanline overlay ready; native video untouched.");
+    console.info("[RicOS CRT05] Pixel-perfect physical scanlines ready; default OFF.");
     return true;
   }
 
-  function init() {
-    if (install()) {
-      clearInterval(checkTimer);
-    } else if (++attempts >= 150) {
-      clearInterval(checkTimer);
-      console.warn("[RicOS CRT04] Menu not ready; leaving original emulator unchanged");
-    }
+  function tryInstall() {
+    if (install() || ++attempts >= 150) clearInterval(installPoll);
   }
 
-  checkTimer = setInterval(init, 100);
-  init();
+  installPoll = setInterval(tryInstall, 100);
+  tryInstall();
 })();
