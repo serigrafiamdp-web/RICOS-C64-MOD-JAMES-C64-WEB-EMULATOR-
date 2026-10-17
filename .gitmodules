@@ -1,0 +1,3 @@
+[submodule "vendor/lvllvl"]
+	path = vendor/lvllvl
+	url = https://github.com/jaammees/lvllvl.git
