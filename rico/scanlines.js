@@ -1,61 +1,69 @@
-/* RicOS CRT06 — native C64 display canvas scanlines; NO overlay layer.
-   Fixed 1 internal framebuffer pixel dark / 1 transparent.
-   Original James C64 source, WASM, menu UI and presentation scale unmodified. */
+/* RicOS CRT07 — scanlines composited in James' 384x272 native frame BEFORE
+   browser display scaling. No DOM overlay or final-canvas pixel stripes.
+   Original renderer, menu system, WASM and source are not modified. */
 (function () {
   "use strict";
 
   var enabled = false;
   var installed = false;
-  var menuItem = null;
+  var item = null;
   var originalRedraw = null;
-  var cachedContext = null;
-  var cachedPattern = null;
+  var cachedOffscreenContext = null;
+  var stripePattern = null;
   var poll = null;
   var attempts = 0;
 
-  function getStripePattern(context) {
-    if (context === cachedContext && cachedPattern) return cachedPattern;
+  function getPattern(ctx) {
+    if (cachedOffscreenContext === ctx && stripePattern) return stripePattern;
 
-    // Exactly two INTEGER backing pixels high; no scaling or CSS interpolation.
     var tile = document.createElement("canvas");
     tile.width = 1;
     tile.height = 2;
-    var tileContext = tile.getContext("2d");
-    var pixels = tileContext.createImageData(1, 2);
-    pixels.data[0] = 0;
-    pixels.data[1] = 0;
-    pixels.data[2] = 0;
-    pixels.data[3] = 107;  // 42% black, one pixel.
-    // Second row remains fully transparent.
-    tileContext.putImageData(pixels, 0, 0);
+    var tileCtx = tile.getContext("2d", { alpha: true });
+    var pixels = tileCtx.createImageData(1, 2);
+    pixels.data[3] = 90;  // Fine, soft black on one source raster row.
+    tileCtx.putImageData(pixels, 0, 0);
 
-    cachedContext = context;
-    cachedPattern = context.createPattern(tile, "repeat");
-    return cachedPattern;
+    cachedOffscreenContext = ctx;
+    stripePattern = ctx.createPattern(tile, "repeat");
+    return stripePattern;
   }
 
-  function applyScanlines(instance) {
+  function drawPreScale(instance) {
     if (!enabled || instance.type === "compact") return;
-    var context = instance.context;
-    var canvas = instance.canvas;
-    if (!context || !canvas || !canvas.width || !canvas.height) return;
+    var off = instance.offscreenCanvas;
+    var offCtx = instance.offscreenContext;
+    var on = instance.canvas;
+    var onCtx = instance.context;
+    if (!off || !offCtx || !on || !onCtx || !instance.imageData) return;
 
-    var pattern = getStripePattern(context);
+    var pattern = getPattern(offCtx);
     if (!pattern) return;
 
-    context.save();
-    // Same pixel grid and same bitmap as James' C64 output; no separate
-    // DOM layer that could shift during zoom, resize or browser compositing.
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.fillStyle = pattern;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.restore();
+    // Draw lines at EXACT native source rows, with no display-pixel phase.
+    offCtx.save();
+    offCtx.setTransform(1, 0, 0, 1, 0, 0);
+    offCtx.fillStyle = pattern;
+    offCtx.fillRect(0, 0, off.width, off.height);
+    offCtx.restore();
+
+    // Reuse James' own final-image scaling, exactly the same coordinates.
+    onCtx.drawImage(off, 0, 0, off.width, off.height,
+                    0, 0, on.width, on.height);
+
+    // Preserve the original native info/grid and mouse overlays.
+    if (instance.grid && typeof instance.drawGrid === "function") {
+      instance.drawGrid();
+    }
+    if (instance.mouseX !== false && instance.mouseY !== false &&
+        typeof instance.drawMousePosition === "function") {
+      instance.drawMousePosition();
+    }
   }
 
   function toggle() {
     enabled = !enabled;
-    if (menuItem) menuItem.setChecked(enabled);
-    // Clear lines immediately upon OFF even while debugger is paused.
+    if (item) item.setChecked(enabled);
     if (window.g_app && g_app.c64Debugger &&
         typeof g_app.c64Debugger.redraw === "function") {
       g_app.c64Debugger.redraw();
@@ -72,9 +80,9 @@
     if (!menus || !menus.length) return false;
     var c64Menu = null;
     for (var i = 0; i < menus.length; i++) {
-      var node = document.getElementById(menus[i].menuBarItemId);
-      if (menus[i].label === "C64" && node &&
-          node.classList.contains("ui-menu-c64")) {
+      var menuElement = document.getElementById(menus[i].menuBarItemId);
+      if (menus[i].label === "C64" && menuElement &&
+          menuElement.classList.contains("ui-menu-c64")) {
         c64Menu = menus[i];
         break;
       }
@@ -84,24 +92,24 @@
     originalRedraw = C64Debugger.prototype.redraw;
     C64Debugger.prototype.redraw = function () {
       var result = originalRedraw.apply(this, arguments);
-      applyScanlines(this);
+      drawPreScale(this);
       return result;
     };
-    menuItem = c64Menu.addItem({
-      label: "CRT Scanlines (CRT06)",
-      id: "ricos-crt06-scanlines",
+
+    item = c64Menu.addItem({
+      label: "CRT Scanlines (CRT07)",
+      id: "ricos-crt07-scanlines",
       checked: false
     });
-    menuItem.on("click", toggle);
+    item.on("click", toggle);
     installed = true;
-    console.info("[RicOS CRT06] One-pixel native scanlines ready (OFF).");
+    console.info("[RicOS CRT07] Pre-scale original raster scanlines installed; OFF.");
     return true;
   }
 
   function tryInstall() {
     if (install() || ++attempts >= 150) clearInterval(poll);
   }
-
   poll = setInterval(tryInstall, 100);
   tryInstall();
 })();
