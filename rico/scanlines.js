@@ -43,7 +43,7 @@
       overlay.id = "ricos-crt03-scanlines";
       overlay.setAttribute("aria-hidden", "true");
       overlay.style.cssText =
-        "position:absolute;pointer-events:none;display:none;z-index:1;" +
+        "position:absolute;pointer-events:none;display:none;" +
         "background-repeat:repeat;will-change:transform";
       // Put effect immediately after picture but BELOW James' play / joystick controls.
       canvas.insertAdjacentElement("afterend", overlay);
