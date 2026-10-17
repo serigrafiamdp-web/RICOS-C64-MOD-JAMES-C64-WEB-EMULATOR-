@@ -67,15 +67,15 @@ test -s rico/scanlines.js || { echo "ERROR: Missing RicOS scanline source"; exit
 mkdir -p "$dest_dir/rico"
 cp rico/scanlines.js "$dest_dir/rico/scanlines.js"
 # c64/index.html contains <base href="../">, so rico/ resolves to project root.
-sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT06"></script></head>#' "$dest_dir/c64/index.html"
-test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT06"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
+sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT07"></script></head>#' "$dest_dir/c64/index.html"
+test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT07"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
   echo "ERROR: CRT script injection failed"; exit 1;
 }
 test -s "$dest_dir/rico/scanlines.js"
 echo "PASS: Added only one script reference in C64 HTML; original bundle remains intact."
 node --check "$dest_dir/rico/scanlines.js"
-grep -Fq 'context.createPattern(tile, "repeat")' "$dest_dir/rico/scanlines.js"
-grep -Fq 'context.fillRect(0, 0, canvas.width, canvas.height)' "$dest_dir/rico/scanlines.js"
+grep -Fq 'offCtx.fillRect(0, 0, off.width, off.height)' "$dest_dir/rico/scanlines.js"
+grep -Fq 'onCtx.drawImage(off, 0, 0, off.width, off.height,' "$dest_dir/rico/scanlines.js"
 ! grep -Fq 'insertAdjacentElement' "$dest_dir/rico/scanlines.js"
-echo "PASS: CRT06 native canvas rendering, no rescaled DOM overlay."
+echo "PASS: CRT07 scanlines rendered at native 384x272 before image scaling."
 echo "PASS: RicOS optional CRT Scanlines extension packaged (default OFF)."
