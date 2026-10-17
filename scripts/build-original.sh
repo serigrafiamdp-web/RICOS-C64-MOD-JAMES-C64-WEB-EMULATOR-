@@ -67,8 +67,8 @@ test -s rico/scanlines.js || { echo "ERROR: Missing RicOS scanline source"; exit
 mkdir -p "$dest_dir/rico"
 cp rico/scanlines.js "$dest_dir/rico/scanlines.js"
 # c64/index.html contains <base href="../">, so rico/ resolves to project root.
-sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT08"></script></head>#' "$dest_dir/c64/index.html"
-test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT08"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
+sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT09"></script></head>#' "$dest_dir/c64/index.html"
+test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT09"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
   echo "ERROR: CRT script injection failed"; exit 1;
 }
 test -s "$dest_dir/rico/scanlines.js"
@@ -77,7 +77,7 @@ node --check "$dest_dir/rico/scanlines.js"
 grep -Fq 'gl_FragCoord.y' "$dest_dir/rico/scanlines.js"
 grep -Fq 'filter.gl.drawArrays(filter.gl.TRIANGLES, 0, 3)' "$dest_dir/rico/scanlines.js"
 grep -Fq 'context.drawImage(filter.buffer, 0, 0)' "$dest_dir/rico/scanlines.js"
-grep -Fq '0.30 * stripe' "$dest_dir/rico/scanlines.js"
+grep -Fq '0.38 * stripe' "$dest_dir/rico/scanlines.js"
 ! grep -Fq 'insertAdjacentElement' "$dest_dir/rico/scanlines.js"
-echo "PASS: CRT08 one-triangle CLEAN shader, 30% uniform opacity, no overlay."
+echo "PASS: CRT09 one-triangle CLEAN shader, 38% uniform opacity, no overlay."
 echo "PASS: RicOS optional CRT Scanlines extension packaged (default OFF)."
