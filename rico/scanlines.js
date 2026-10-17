@@ -1,4 +1,4 @@
-/* RicOS TEST CRT08: MAME-style CLEAN scanlines via one WebGL shader pass.
+/* RicOS TEST CRT09: MAME-style CLEAN scanlines via one WebGL shader pass.
    1 ON / 1 OFF output pixel, uniform darkness 30%, variation 0, blur 0,
    no curvature, no mask. A SINGLE full-screen triangle prevents any seam.
    No DOM overlay, no gradients and no changes to James' source / WASM. */
@@ -42,7 +42,7 @@
       "void main() {",
       "  float row = floor(gl_FragCoord.y);",
       "  float stripe = 1.0 - mod(row, 2.0);",
-      "  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.30 * stripe);",
+      "  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.38 * stripe);",
       "}"
     ].join("\n");
 
@@ -51,7 +51,7 @@
       gl.shaderSource(sh, source);
       gl.compileShader(sh);
       if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-        console.warn("[RicOS CRT08] Shader compile error:", gl.getShaderInfoLog(sh));
+        console.warn("[RicOS CRT09] Shader compile error:", gl.getShaderInfoLog(sh));
         gl.deleteShader(sh);
         return null;
       }
@@ -67,7 +67,7 @@
     gl.attachShader(program, frag);
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.warn("[RicOS CRT08] Shader linking failed:", gl.getProgramInfoLog(program));
+      console.warn("[RicOS CRT09] Shader linking failed:", gl.getProgramInfoLog(program));
       return null;
     }
     gl.deleteShader(vert);
@@ -99,7 +99,7 @@
     // Pixel-exact Canvas2D fallback if WebGL is not supported.
     context.save();
     context.setTransform(1, 0, 0, 1, 0, 0);
-    context.fillStyle = "rgba(0,0,0,0.30)";
+    context.fillStyle = "rgba(0,0,0,0.38)";
     for (var row = 0; row < canvas.height; row += 2) {
       context.fillRect(0, row, canvas.width, 1);
     }
@@ -116,7 +116,7 @@
       try {
         filter = createFilter();
       } catch (error) {
-        console.warn("[RicOS CRT08] WebGL unavailable:", error);
+        console.warn("[RicOS CRT09] WebGL unavailable:", error);
       }
       if (!filter) webglFailed = true;
     }
@@ -180,13 +180,13 @@
       return result;
     };
     menuItem = realMenu.addItem({
-      label: "CRT Scanlines (CRT08)",
+      label: "CRT Scanlines (CRT09)",
       id: "ricos-crt08-scanlines",
       checked: false
     });
     menuItem.on("click", toggle);
     installed = true;
-    console.info("[RicOS CRT08] CLEAN shader ready, default OFF.");
+    console.info("[RicOS CRT09] CLEAN shader ready, default OFF.");
     return true;
   }
 
