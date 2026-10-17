@@ -27,11 +27,11 @@
     // Native single-path rendering keeps overhead small.
     var rowScale = canvas.height / 272;
     ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
     ctx.beginPath();
-    for (var y = 1; y < 272; y += 2) {
+    for (var y = 1; y < 272; y += 1) {
       var y0 = Math.round(y * rowScale);
-      var y1 = Math.round((y + 0.36) * rowScale);
+      var y1 = Math.round((y + 0.22) * rowScale);
       ctx.rect(0, y0, canvas.width, Math.max(1, y1 - y0));
     }
     ctx.fill();
