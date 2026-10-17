@@ -1,0 +1,72 @@
+name: TEST 03 - Original James C64 1to1
+
+on:
+  push:
+    branches:
+      - main
+      - test/original-james-1to1
+    paths:
+      - ".github/workflows/james-original-pages.yml"
+      - ".gitmodules"
+      - "vendor/lvllvl"
+      - "scripts/build-original.sh"
+      - "docs/TEST_03_ORIGINAL.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-original:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RicOS with pinned original James source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Copy complete original distribution and verify all 555 files
+        shell: bash
+        run: bash scripts/build-original.sh site
+
+      - name: Archive full executable TEST 03 site for manual review
+        uses: actions/upload-artifact@v4
+        with:
+          name: RicOS-TEST03-JAMES-ORIGINAL-1TO1
+          path: site/
+          include-hidden-files: true
+          retention-days: 30
+
+  deploy:
+    needs: verify-original
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Retrieve verified original distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: RicOS-TEST03-JAMES-ORIGINAL-1TO1
+          path: site/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload original files to Pages without altering them
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy exact source build to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
