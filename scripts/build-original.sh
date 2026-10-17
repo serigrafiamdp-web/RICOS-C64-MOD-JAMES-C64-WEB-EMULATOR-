@@ -73,4 +73,8 @@ test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT05"></script>' "$dest_dir/
 }
 test -s "$dest_dir/rico/scanlines.js"
 echo "PASS: Added only one script reference in C64 HTML; original bundle remains intact."
+node --check "$dest_dir/rico/scanlines.js"
+grep -Fq 'ctx.fillRect(0, y, overlay.width, 1);' "$dest_dir/rico/scanlines.js"
+grep -Fq 'y += 2' "$dest_dir/rico/scanlines.js"
+echo "PASS: CRT05 physical-pixel scanline renderer syntax and line pitch validated."
 echo "PASS: RicOS optional CRT Scanlines extension packaged (default OFF)."
