@@ -67,8 +67,8 @@ test -s rico/scanlines.js || { echo "ERROR: Missing RicOS scanline source"; exit
 mkdir -p "$dest_dir/rico"
 cp rico/scanlines.js "$dest_dir/rico/scanlines.js"
 # c64/index.html contains <base href="../">, so rico/ resolves to project root.
-sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT04"></script></head>#' "$dest_dir/c64/index.html"
-test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT04"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
+sed -i 's#</head>#<script src="rico/scanlines.js?v=CRT05"></script></head>#' "$dest_dir/c64/index.html"
+test "$(grep -Fc '<script src="rico/scanlines.js?v=CRT05"></script>' "$dest_dir/c64/index.html")" -eq 1 || {
   echo "ERROR: CRT script injection failed"; exit 1;
 }
 test -s "$dest_dir/rico/scanlines.js"
