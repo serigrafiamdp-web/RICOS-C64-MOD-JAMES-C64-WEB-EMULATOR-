@@ -52,3 +52,7 @@ Dirección esperada tras publicación:
 - `backup/test-02-ui`: TEST 02 antiguo (FAIL de paridad).
 - `backup/test-01-player`: primer reproductor (FAIL de paridad).
 - Ninguno debe usarse como referencia para nuevos diseños.
+
+## Re-publicación de TEST 03
+
+La compilación íntegra permanece inalterada. Si al reejecutar *un job aislado* de GitHub Actions aparece el error de múltiples artefactos `github-pages`, debe iniciarse **una ejecución nueva del workflow completo**. Esta revisión de documentación inicia una ejecución nueva del TEST 03 en `main`, sin modificar la distribución original.
