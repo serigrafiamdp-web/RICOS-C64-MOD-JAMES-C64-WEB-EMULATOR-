@@ -1,106 +1,108 @@
-/*
- * RicOS / James C64 — TEST CRT01: optional horizontal scanlines.
- * No changes to the C64 WebAssembly runtime, original menus or original renderer.
- * Default OFF. Menu item is added using the original UI.Menu API.
- */
+/* RicOS CRT03 — fine half-pitch scanlines at CSS display resolution.
+   Original James C64 renderer, framebuffer and UI menu logic remain intact. */
 (function () {
   "use strict";
 
-  var installed = false;
-  var timer = null;
-  var attempts = 0;
-  var maxAttempts = 120; // 12 seconds, then leave original behavior unchanged.
-  var scanlinesEnabled = false;
-  var originalRedraw = null;
-  var item = null;
+  var VERSION = "CRT03";
+  var installed = false, enabled = false, item = null;
+  var overlay = null, canvas = null, holder = null;
+  var checkTimer = null, layoutTimer = null, attempts = 0;
 
-  function addScanlinesToCanvas(debuggerInstance) {
-    if (!scanlinesEnabled || debuggerInstance.type === "compact") return;
+  function alignOverlay() {
+    if (!enabled || !overlay || !canvas || !holder) return;
+    var rect = canvas.getBoundingClientRect();
+    var parentRect = holder.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
 
-    var canvas = debuggerInstance.canvas;
-    var ctx = debuggerInstance.context;
-    if (!canvas || !ctx || !canvas.width || !canvas.height) return;
+    overlay.style.left = (rect.left - parentRect.left) + "px";
+    overlay.style.top = (rect.top - parentRect.top) + "px";
+    overlay.style.width = rect.width + "px";
+    overlay.style.height = rect.height + "px";
 
-    // 272 PAL/NTSC raster buffer pixels high, as in James' offscreen buffer.
-    // Draw only on the DISPLAY canvas, after the original redraw is complete.
-    // 0.36 emulator-pixel line height, across alternating source rows.
-    // Native single-path rendering keeps overhead small.
-    var rowScale = canvas.height / 272;
-    ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
-    ctx.beginPath();
-    for (var y = 1; y < 272; y += 1) {
-      var y0 = Math.round(y * rowScale);
-      var y1 = Math.round((y + 0.22) * rowScale);
-      ctx.rect(0, y0, canvas.width, Math.max(1, y1 - y0));
+    // One horizontal scanline per emulator row, vs two rows in CRT01.
+    // Draw using the browser's CSS gradient: fractional pixels are retained.
+    var pitch = rect.height / 272;
+    var thickness = Math.min(pitch * 0.46, pitch - 0.1);
+    overlay.style.backgroundImage =
+      "repeating-linear-gradient(to bottom," +
+      "rgba(0,0,0,0.50) 0px," +
+      "rgba(0,0,0,0.50) " + thickness.toFixed(3) + "px," +
+      "transparent " + thickness.toFixed(3) + "px," +
+      "transparent " + pitch.toFixed(3) + "px)";
+  }
+
+  function ensureOverlay() {
+    if (!window.g_app || !g_app.c64Debugger) return false;
+    canvas = g_app.c64Debugger.canvas || document.getElementById("c64DebuggerCanvas");
+    if (!canvas) return false;
+    holder = document.getElementById("c64DebuggerCanvasHolder") || canvas.parentElement;
+    if (!holder) return false;
+
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "ricos-crt03-scanlines";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.style.cssText =
+        "position:absolute;pointer-events:none;display:none;" +
+        "background-repeat:repeat;will-change:transform";
+      // Put effect immediately after picture but BELOW James' play / joystick controls.
+      canvas.insertAdjacentElement("afterend", overlay);
     }
-    ctx.fill();
-    ctx.restore();
+    return true;
   }
 
   function toggle() {
-    scanlinesEnabled = !scanlinesEnabled;
-    if (item && typeof item.setChecked === "function") {
-      item.setChecked(scanlinesEnabled);
-    }
-    // A single redraw also works when the machine is paused.
-    if (window.g_app && g_app.c64Debugger &&
-        typeof g_app.c64Debugger.redraw === "function") {
-      g_app.c64Debugger.redraw();
+    enabled = !enabled;
+    if (item) item.setChecked(enabled);
+    if (enabled && ensureOverlay()) {
+      overlay.style.display = "block";
+      alignOverlay();
+      layoutTimer = setInterval(alignOverlay, 300);
+    } else {
+      if (overlay) overlay.style.display = "none";
+      if (layoutTimer) clearInterval(layoutTimer);
+      layoutTimer = null;
     }
   }
 
   function install() {
     if (installed) return true;
-    if (!window.g_app || !g_app.menuBar || !g_app.c64Debugger ||
-        !window.C64Debugger || !C64Debugger.prototype ||
-        typeof C64Debugger.prototype.redraw !== "function") {
-      return false;
-    }
-
+    if (!window.g_app || !g_app.menuBar || !g_app.c64Debugger) return false;
     var menus = g_app.menuBar.menus;
     if (!menus || !menus.length) return false;
-    var c64Menu = null;
+
+    var nativeC64Menu = null;
     for (var i = 0; i < menus.length; i++) {
-      // James defines TWO C64 menus. The first belongs to a hidden old assembler
-      // menu. Select the actual C64 menu currently rendered on the menu bar.
-      var menuElement = document.getElementById(menus[i].menuBarItemId);
-      if (menus[i].label === "C64" &&
-          menuElement && menuElement.classList.contains("ui-menu-c64")) {
-        c64Menu = menus[i];
+      var el = document.getElementById(menus[i].menuBarItemId);
+      if (menus[i].label === "C64" && el &&
+          el.classList.contains("ui-menu-c64")) {
+        nativeC64Menu = menus[i];
         break;
       }
     }
-    if (!c64Menu) return false;
+    if (!nativeC64Menu) return false;
 
-    // No hand-made dropdown or UI: this is the original James menu item type.
-    originalRedraw = C64Debugger.prototype.redraw;
-    C64Debugger.prototype.redraw = function () {
-      var result = originalRedraw.apply(this, arguments);
-      addScanlinesToCanvas(this);
-      return result;
-    };
-
-    item = c64Menu.addItem({
-      label: "CRT Scanlines",
-      id: "ricos-c64-scanlines",
+    // Temporarily show test number to prove updated JS actually loaded.
+    item = nativeC64Menu.addItem({
+      label: "CRT Scanlines (CRT03)",
+      id: "ricos-crt03-scanlines",
       checked: false
     });
     item.on("click", toggle);
     installed = true;
-    console.info("[RicOS CRT01] Original C64 renderer preserved; CRT Scanlines option ready (OFF).");
+    console.info("[RicOS CRT03] Fine 1-row scanline overlay ready; native video untouched.");
     return true;
   }
 
-  function attemptInstall() {
+  function init() {
     if (install()) {
-      clearInterval(timer);
-    } else if (++attempts >= maxAttempts) {
-      clearInterval(timer);
-      console.warn("[RicOS CRT01] Original UI was not ready; scanline option not installed.");
+      clearInterval(checkTimer);
+    } else if (++attempts >= 150) {
+      clearInterval(checkTimer);
+      console.warn("[RicOS CRT03] Menu not ready; leaving original emulator unchanged");
     }
   }
 
-  timer = setInterval(attemptInstall, 100);
-  attemptInstall();
+  checkTimer = setInterval(init, 100);
+  init();
 })();
